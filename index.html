@@ -1,0 +1,1510 @@
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { 
+  Coins, 
+  Bug, 
+  X, 
+  Sparkles,
+  ChefHat,
+  MousePointer2,
+  PawPrint,
+  Flame,
+  Droplets,
+  Zap,
+  BookOpen,
+  HelpCircle,
+  Trophy,
+  Banknote,
+  Play,
+  Linkedin
+} from 'lucide-react';
+
+// --- Configuration & Assets ---
+
+const GRID_SIZE = 8;
+const GAME_SPEED = 800; // ms
+const MAX_MOVES = 30;
+const TARGET_SCORE = 7000;
+
+const LEVEL_LAYOUT = [
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 0, 0, 1, 1, 1],
+  [1, 1, 1, 0, 0, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1, 1, 1, 1],
+];
+
+// --- Custom Vector Assets ---
+
+const AssetIcon = ({ type, className }) => {
+  const commonProps = {
+    viewBox: "0 0 100 100",
+    className: className,
+    fill: "none",
+    xmlns: "http://www.w3.org/2000/svg",
+    style: { filter: 'drop-shadow(0px 4px 2px rgba(0,0,0,0.2))' }
+  };
+
+  switch (type) {
+    // --- LETTUCE SERIES ---
+    case 'lettuce_1': 
+      return (
+        <svg {...commonProps}>
+          {/* Base Layer - Darker Green */}
+          <path d="M50 95 C25 95 10 75 15 50 C20 25 40 10 50 15 C60 10 80 25 85 50 C90 75 75 95 50 95 Z" fill="#22c55e" />
+          
+          {/* Inner Leaf Layer - Lighter Green */}
+          <path d="M50 88 C35 88 20 70 25 50 C30 35 40 25 50 28 C60 25 70 35 75 50 C80 70 65 88 50 88 Z" fill="#4ade80" />
+          
+          {/* Ruffled Ridge Outlines */}
+          <path d="M50 15 Q35 15 25 30 Q15 45 20 60 Q25 75 50 85" stroke="#15803d" strokeWidth="2" fill="none" strokeLinecap="round" />
+          <path d="M50 15 Q65 15 75 30 Q85 45 80 60 Q75 75 50 85" stroke="#15803d" strokeWidth="2" fill="none" strokeLinecap="round" />
+          
+          {/* Veins */}
+          <path d="M50 25 V 80" stroke="#bbf7d0" strokeWidth="3" strokeLinecap="round" opacity="0.6" />
+          <path d="M50 40 L35 30" stroke="#bbf7d0" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+          <path d="M50 40 L65 30" stroke="#bbf7d0" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+          <path d="M50 55 L30 45" stroke="#bbf7d0" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+          <path d="M50 55 L70 45" stroke="#bbf7d0" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+        </svg>
+      );
+    case 'lettuce_2': 
+      return (
+        <svg {...commonProps}>
+          <path d="M15 55C15 75 30 90 50 90C70 90 85 75 85 55H15Z" fill="#e2e8f0" stroke="#94a3b8" strokeWidth="3" />
+          <circle cx="35" cy="45" r="12" fill="#4ade80" stroke="#166534" strokeWidth="1" />
+          <circle cx="65" cy="45" r="12" fill="#22c55e" stroke="#14532d" strokeWidth="1" />
+          <circle cx="50" cy="35" r="12" fill="#86efac" stroke="#15803d" strokeWidth="1" />
+        </svg>
+      );
+    case 'lettuce_3': 
+      return (
+        <svg {...commonProps}>
+          <path d="M10 60C10 85 25 95 50 95C75 95 90 85 90 60H10Z" fill="#fbbf24" stroke="#b45309" strokeWidth="3" />
+          <path d="M20 60C20 35 35 25 50 25C65 25 80 35 80 60H20Z" fill="#bbf7d0" />
+          <rect x="45" y="35" width="10" height="10" rx="2" fill="#d97706" />
+          <rect x="30" y="45" width="10" height="10" rx="2" fill="#d97706" />
+          <rect x="60" y="45" width="10" height="10" rx="2" fill="#d97706" />
+        </svg>
+      );
+
+    // --- CHICKEN SERIES ---
+    case 'chicken_1': 
+      return (
+        <svg {...commonProps}>
+           <g transform="translate(5, 5) rotate(-45 50 50)">
+             {/* Bone Shaft */}
+             <rect x="44" y="60" width="12" height="35" rx="3" fill="#fefce8" stroke="#d97706" strokeWidth="1" />
+             
+             {/* Bone Knobs (The classic joint shape) */}
+             <path d="M44 92 C38 92 35 96 38 100 C40 104 48 102 50 97 C52 102 60 104 62 100 C65 96 62 92 56 92 H44 Z" fill="#fefce8" stroke="#d97706" strokeWidth="1" />
+             
+             {/* Meat - tapered and narrower for realism */}
+             <path d="M50 10 C30 10 20 40 42 65 L57 65 C80 40 70 10 50 10 Z" fill="#fb923c" stroke="#c2410c" strokeWidth="2" strokeLinejoin="round" />
+             
+             {/* Texture/Highlight */}
+             <path d="M40 30 Q50 40 60 30" stroke="#fed7aa" strokeWidth="2" opacity="0.5" fill="none" />
+             <circle cx="60" cy="20" r="2" fill="#fed7aa" opacity="0.5" />
+           </g>
+        </svg>
+      );
+    case 'chicken_2': 
+      return (
+        <svg {...commonProps}>
+          <path d="M25 40C25 25 35 15 50 15C65 15 75 25 75 40V70C75 85 65 90 50 90C35 90 25 85 25 70V40Z" fill="#f97316" stroke="#7c2d12" strokeWidth="2" />
+          <path d="M30 35H70" stroke="#7c2d12" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
+          <path d="M30 50H70" stroke="#7c2d12" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
+          <path d="M30 65H70" stroke="#7c2d12" strokeWidth="3" strokeLinecap="round" opacity="0.5" />
+        </svg>
+      );
+    case 'chicken_3': 
+      return (
+        <svg {...commonProps}>
+          <ellipse cx="50" cy="75" rx="45" ry="15" fill="#e2e8f0" stroke="#64748b" strokeWidth="2" />
+          <ellipse cx="50" cy="50" rx="30" ry="25" fill="#ea580c" />
+          <circle cx="20" cy="50" r="5" fill="white" />
+          <circle cx="80" cy="50" r="5" fill="white" />
+        </svg>
+      );
+
+    // --- TOMATO SERIES ---
+    case 'tomato_1': 
+      return (
+        <svg {...commonProps}>
+          <circle cx="50" cy="55" r="35" fill="#ef4444" stroke="#991b1b" strokeWidth="2" />
+          <ellipse cx="65" cy="40" rx="8" ry="4" fill="white" opacity="0.6" transform="rotate(-30 65 40)" />
+          <path d="M50 25L40 35M50 25L60 35M50 25L35 25M50 25L65 25M50 25L50 15" stroke="#16a34a" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
+          <circle cx="50" cy="25" r="3" fill="#16a34a" />
+        </svg>
+      );
+    case 'tomato_2': 
+      return (
+        <svg {...commonProps}>
+          <circle cx="50" cy="50" r="40" fill="#dc2626" stroke="#7f1d1d" strokeWidth="2" />
+          <circle cx="50" cy="50" r="34" fill="#fca5a5" />
+          <path d="M50 50L50 20" stroke="#b91c1c" strokeWidth="3" />
+          <path d="M50 50L76 65" stroke="#b91c1c" strokeWidth="3" />
+          <path d="M50 50L24 65" stroke="#b91c1c" strokeWidth="3" />
+          <circle cx="40" cy="35" r="2" fill="#7f1d1d" />
+          <circle cx="60" cy="35" r="2" fill="#7f1d1d" />
+          <circle cx="50" cy="70" r="2" fill="#7f1d1d" />
+        </svg>
+      );
+    case 'tomato_3': 
+      return (
+        <svg {...commonProps}>
+          <path d="M20 40H80V75C80 85 70 90 50 90C30 90 20 85 20 75V40Z" fill="#c2410c" stroke="#7c2d12" strokeWidth="2" />
+          <ellipse cx="50" cy="40" rx="30" ry="8" fill="#ef4444" />
+          <path d="M15 45H10V60H15" stroke="#7c2d12" strokeWidth="3" fill="none" />
+          <path d="M85 45H90V60H85" stroke="#7c2d12" strokeWidth="3" fill="none" />
+        </svg>
+      );
+
+    // --- BUFFS ---
+    case 'fire':
+      return (
+        <svg {...commonProps}>
+          <path d="M50 10Q25 50 25 70A25 25 0 0 0 75 70Q75 50 50 10Z" fill="#ef4444" stroke="#7f1d1d" strokeWidth="2" />
+          <path d="M50 35Q40 55 40 70A10 10 0 0 0 60 70Q60 55 50 35Z" fill="#fcd34d" />
+        </svg>
+      );
+    case 'water':
+      return (
+        <svg {...commonProps}>
+          {/* Drop Body */}
+          <path d="M50 5 Q15 55 15 72 A35 35 0 0 0 85 72 Q85 55 50 5Z" fill="#3b82f6" stroke="#1e3a8a" strokeWidth="2" />
+          {/* Shadow at bottom - Lowered */}
+          <path d="M25 80 Q50 90 75 80" stroke="#1e40af" strokeWidth="0" fill="#1e40af" opacity="0.2" />
+          {/* Highlight - Oval */}
+          <ellipse cx="65" cy="40" rx="5" ry="10" fill="white" opacity="0.5" transform="rotate(-15 65 40)" />
+        </svg>
+      );
+    case 'electricity':
+      return (
+        <svg {...commonProps}>
+          <path d="M55 5L20 50H50L45 95L80 50H50L55 5Z" fill="#fbbf24" stroke="#854d0e" strokeWidth="3" strokeLinejoin="round" />
+        </svg>
+      );
+    
+    // --- BONUSES ---
+    case 'coin':
+      return (
+        <svg {...commonProps}>
+          <circle cx="50" cy="50" r="35" fill="#fbbf24" stroke="#b45309" strokeWidth="3" />
+          <text x="50" y="65" fontSize="40" textAnchor="middle" fill="#92400e" fontWeight="900" style={{ fontFamily: 'sans-serif' }}>฿</text>
+        </svg>
+      );
+    case 'cash':
+      return (
+        <svg {...commonProps}>
+          <g transform="rotate(-15 50 50)">
+            <rect x="15" y="30" width="70" height="40" rx="4" fill="#86efac" stroke="#166534" strokeWidth="3" />
+            <circle cx="50" cy="50" r="12" fill="none" stroke="#166534" strokeWidth="2" />
+            <text x="50" y="56" fontSize="18" textAnchor="middle" fill="#166534" fontWeight="bold" style={{ fontFamily: 'sans-serif' }}>฿</text>
+          </g>
+        </svg>
+      );
+    
+    // --- MASCOT: YOUR FIXED CAT CHEF ---
+    case 'cat_mascot_large':
+      return (
+        <svg {...commonProps} viewBox="0 0 200 200">
+            <defs>
+              <linearGradient id="bodyGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#fb923c" />
+                <stop offset="100%" stopColor="#c2410c" />
+              </linearGradient>
+              <linearGradient id="metalGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stopColor="#94a3b8" />
+                <stop offset="100%" stopColor="#475569" />
+              </linearGradient>
+            </defs>
+
+            {/* TAIL (Back) */}
+            <path d="M160 170 Q190 150 180 110" stroke="#f97316" strokeWidth="12" strokeLinecap="round" fill="none" transform="translate(1, 11) rotate(8)"/>
+
+            {/* BODY (Back Layer) */}
+            <path d="M60 200 L75 145 Q100 140 125 145 L140 200 Z" fill="url(#bodyGrad)" stroke="#7c2d12" strokeWidth="3" />
+            <path d="M85 200 L92 160 Q100 155 108 160 L115 200 Z" fill="#fff7ed" /> 
+ 
+            {/* HEAD (Top Layer) */}
+            <ellipse cx="100" cy="95" rx="55" ry="45" fill="url(#bodyGrad)" stroke="#7c2d12" strokeWidth="3" transform="translate(0, 9)"/>
+
+            {/* Hat */}
+            <path d="M70 45 Q55 5 100 15 Q145 5 130 45" fill="white" stroke="#e2e8f0" strokeWidth="2" transform="translate(0, 9)"/>
+            <rect x="65" y="42" width="70" height="12.6" rx="4" fill="white" stroke="#e2e8f0" strokeWidth="2" transform="translate(0, 9)"/>
+
+            {/* Ears */}
+            <path d="M60 65 L55 30 L85 55 Z" fill="#fb923c" stroke="#c2410c" strokeWidth="2" strokeLinejoin="round" transform="translate(0, 9)"/>
+            <path d="M140 65 L145 30 L115 55 Z" fill="#fb923c" stroke="#c2410c" strokeWidth="2" strokeLinejoin="round" transform="translate(0, 9)"/>
+            <path d="M63 60 L60 40 L78 54 Z" fill="#fca5a5" transform="translate(0, 9)"/>
+            <path d="M137 60 L139 40 L122 54 Z" fill="#fca5a5" transform="translate(0, 9)"/>
+
+            {/* Face Details */}
+            <circle cx="80" cy="90" r="6" fill="#1f2937" transform="translate(0, 9)"/> 
+            <circle cx="120" cy="90" r="6" fill="#1f2937" transform="translate(0, 9)"/> 
+            <circle cx="120" cy="90" r="4.5" fill="black" transform="translate(0, 9)"/>
+            <circle cx="118" cy="88" r="2" fill="white" transform="translate(0, 9)"/>
+            <circle cx="80" cy="90" r="4.5" fill="black" transform="translate(0, 9)"/>
+            <circle cx="78" cy="88" r="2" fill="white" transform="translate(0, 9)"/>
+            
+            {/* Cheeks */}
+            <circle cx="67" cy="105" r="7" fill="#fca5a5" opacity="0.4" transform="translate(0, 9)"/>
+            <circle cx="133" cy="105" r="7" fill="#fca5a5" opacity="0.4" transform="translate(0, 9)"/>
+
+            {/* Nose & Mouth (Fixed) */}
+            <path d="M96 102 Q100 102 104 102 L100 110 Z" fill="#be123c" transform="translate(0, 9)"/>
+            <path d="M100 110 L100 115" stroke="#7c2d12" strokeWidth="2" transform="translate(0, 9)"/> 
+            <path d="M100 115 Q90 122 85 115" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0, 9)"/> 
+            <path d="M100 115 Q110 122 115 115" stroke="#7c2d12" strokeWidth="2" fill="none" strokeLinecap="round" transform="translate(0, 9)"/>
+
+            {/* LEFT ARM & SPATULA (Behind Head) */}
+            
+            <path d="M75 155 Q60 165 50 145" stroke="#fb923c" strokeWidth="14" strokeLinecap="round" fill="none" />
+            <g transform="translate(35, 120) rotate(-25)">
+              {/* Handle */}
+              <rect x="2" y="10" width="8" height="40" rx="4" fill="#573a26" stroke="#3f2305" strokeWidth="1" /> 
+              {/* Blade - Trapezoid with Slots */}
+              <path d="M-2 5 L30 5 L24 25 L4 25 Z" transform="translate(-8, -15)" fill="url(#metalGrad)" stroke="#334155" strokeWidth="1" />
+              <rect x="9" y="10" width="3" height="10" rx="1.5" fill="#1e293b" opacity="0.4" transform="translate(-8, -15)"/>
+              <rect x="16" y="10" width="3" height="10" rx="1.5" fill="#1e293b" opacity="0.4" transform="translate(-8, -15)"/>
+            </g>
+            {/* RIGHT ARM & PAN */}
+            <path d="M125 155 Q140 165 150 145" stroke="#fb923c" strokeWidth="14" strokeLinecap="round" fill="none" />
+            <g transform="translate(163, 105) rotate(25)">
+                <rect x="0" y="25" width="8" height="35" rx="4" fill="#1f2937" />
+                <circle cx="4" cy="15" r="18" fill="#0f172a" stroke="#1f2937" strokeWidth="2"/>
+                <circle cx="4" cy="15" r="14" fill="#374151" />
+            </g>
+
+            {/* COLLAR (Red Neckerchief) - Under Chin */}
+            <path d="M75 145 Q100 165 125 145 L126.5 150 Q100 170 73.5 150 Z" fill="#ef4444" stroke="#b91c1c" strokeWidth="2"/>
+            
+            {/* BELL */}
+            <circle cx="100" cy="162" r="8" fill="#fbbf24" stroke="#b45309" strokeWidth="1.5" />
+            <circle cx="102" cy="160" r="3" fill="#fcd34d" opacity="0.8" />
+            <path d="M100 162 L100 168" stroke="#b45309" strokeWidth="1" />
+
+        </svg>
+      );
+
+    default:
+      return null;
+  }
+};
+
+// --- Item Definitions ---
+
+const BASE_BLOCK_STYLE = "relative overflow-hidden rounded-2xl shadow-[inset_0_2px_4px_rgba(255,255,255,0.7),inset_0_-4px_6px_rgba(0,0,0,0.2),0_4px_0_rgba(0,0,0,0.2)] transition-transform active:scale-95 active:shadow-inner ring-1 ring-white/40";
+
+const ITEMS = {
+  lettuce: {
+    category: 'ingredient',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-green-300 to-green-500 shadow-green-700`,
+    tint: 'bg-green-600',
+    tiers: [
+      { name: 'Fresh Lettuce', assetId: 'lettuce_1' },
+      { name: 'Chopped Salad', assetId: 'lettuce_2' }, 
+      { name: 'Caesar Salad', assetId: 'lettuce_3', isDish: true }
+    ]
+  },
+  chicken: {
+    category: 'ingredient',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-orange-300 to-orange-500 shadow-orange-700`,
+    tint: 'bg-orange-600',
+    tiers: [
+      { name: 'Drumstick', assetId: 'chicken_1' },
+      { name: 'Grilled Chicken', assetId: 'chicken_2' },
+      { name: 'Roast Platter', assetId: 'chicken_3', isDish: true }
+    ]
+  },
+  tomato: {
+    category: 'ingredient',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-red-300 to-red-500 shadow-red-800`,
+    tint: 'bg-red-600',
+    tiers: [
+      { name: 'Tomato', assetId: 'tomato_1' },
+      { name: 'Sliced Tomato', assetId: 'tomato_2' },
+      { name: 'Tomato Soup', assetId: 'tomato_3', isDish: true }
+    ]
+  },
+  fire: {
+    category: 'util',
+    name: 'Spicy Fire',
+    shortName: 'SPEED COOK',
+    desc: 'Next ingredient match creates a finished dish!',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-rose-300 to-rose-500 shadow-rose-800 rounded-full scale-90`,
+    tint: 'bg-rose-600',
+    assetId: 'fire',
+    effect: 'fire_buff'
+  },
+  water: {
+    category: 'util',
+    name: 'Flow Water',
+    shortName: 'ANY SWAP',
+    desc: 'Tap ANY two blocks to swap them!',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-blue-300 to-blue-500 shadow-blue-800 rounded-full scale-90`,
+    tint: 'bg-blue-600',
+    assetId: 'water',
+    effect: 'water_buff'
+  },
+  electricity: {
+    category: 'util',
+    name: 'Static Shock',
+    shortName: 'ZAP TYPE',
+    desc: 'Tap an item to destroy all of its kind!',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-yellow-300 to-yellow-500 shadow-yellow-700 rounded-full scale-90`,
+    tint: 'bg-yellow-500',
+    assetId: 'electricity',
+    effect: 'zap_buff'
+  },
+  coin: {
+    category: 'bonus',
+    name: 'Coin',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-amber-200 to-amber-400 shadow-amber-600 rounded-full border-2 border-white`,
+    tint: 'bg-amber-500',
+    assetId: 'coin',
+    effect: 'score_instant'
+  },
+  cash: {
+    category: 'bonus',
+    name: 'Bank Note',
+    shortName: 'MULTIPLIER',
+    desc: 'Score boosted for next dishes!',
+    styleClass: `${BASE_BLOCK_STYLE} bg-gradient-to-b from-emerald-200 to-emerald-400 shadow-emerald-700 rounded-sm`,
+    tint: 'bg-emerald-600',
+    assetId: 'cash',
+    effect: 'multiplier'
+  }
+};
+
+const ITEM_KEYS = Object.keys(ITEMS);
+
+const SPAWN_WEIGHTS = {
+  lettuce: 20, chicken: 20, tomato: 20,
+  fire: 5, water: 5, electricity: 5,
+  coin: 15, cash: 5
+};
+
+const getWeightedRandomItem = () => {
+  let sum = 0;
+  const r = Math.random() * 100;
+  for (const key of ITEM_KEYS) {
+    const weight = SPAWN_WEIGHTS[key] || 0;
+    sum += weight;
+    if (r <= sum) return key;
+  }
+  return 'lettuce';
+};
+
+// --- Helper Functions ---
+
+const createNewItem = (type = null) => {
+  const itemType = type || getWeightedRandomItem();
+  const config = ITEMS[itemType];
+  return {
+    id: Math.random().toString(36).substr(2, 9),
+    type: itemType,
+    category: config.category,
+    tier: 0, 
+    isNew: true,
+    isMatch: false,
+    isMerging: false,
+  };
+};
+
+const createInitialBoard = () => {
+  const newBoard = [];
+  for (let r = 0; r < GRID_SIZE; r++) {
+    const row = [];
+    for (let c = 0; c < GRID_SIZE; c++) {
+      if (LEVEL_LAYOUT[r][c] === 1) {
+        let newItem;
+        let isMatch;
+        let attempts = 0;
+        
+        do {
+            newItem = createNewItem();
+            isMatch = false;
+            if (c >= 2) {
+                const l1 = row[c-1];
+                const l2 = row[c-2];
+                if (l1 && l2 && l1.type === newItem.type && l2.type === newItem.type) isMatch = true;
+            }
+            if (!isMatch && r >= 2) {
+                const t1 = newBoard[r-1][c];
+                const t2 = newBoard[r-2][c];
+                if (t1 && t2 && t1.type === newItem.type && t2.type === newItem.type) isMatch = true;
+            }
+            attempts++;
+        } while (isMatch && attempts < 50);
+        
+        row.push(newItem);
+      } else {
+        row.push(null);
+      }
+    }
+    newBoard.push(row);
+  }
+  return newBoard;
+};
+
+// --- Components ---
+
+const DebugConsole = ({ logs, visible, onToggle }) => {
+  const scrollRef = useRef(null);
+  useEffect(() => {
+    if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+  }, [logs]);
+
+  if (!visible) return <button onClick={onToggle} className="fixed top-32 left-4 z-[100] bg-black/20 text-white/50 p-2 rounded-lg hover:bg-black/40 backdrop-blur-sm"><Bug size={20}/></button>;
+
+  return (
+    <div className="fixed top-32 left-4 z-[100] w-80 bg-black/80 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl flex flex-col font-mono text-xs overflow-hidden">
+      <div className="flex justify-between items-center bg-white/5 p-2 border-b border-white/10">
+        <span className="text-pink-300 font-bold">Chef's Log</span>
+        <button onClick={onToggle} className="text-white/50"><X size={14}/></button>
+      </div>
+      <div ref={scrollRef} className="h-32 overflow-y-auto p-2 space-y-1 text-white/80">
+        {logs.map((log, i) => (
+          <div key={i} className="border-l-2 border-pink-500/50 pl-2 leading-tight">
+            <span className="opacity-50 font-bold">#{log.id}</span> {log.msg}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+const GuideBanner = ({ message }) => {
+  if (!message) return null;
+  return (
+    <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-[100] w-[90%] max-w-md animate-pop-in">
+      <div className="bg-white/95 backdrop-blur-md rounded-xl border-2 border-yellow-300 shadow-xl px-4 py-3 flex items-center justify-center gap-2">
+        <Sparkles size={20} className="text-yellow-500 animate-pulse shrink-0" />
+        <p className="text-sm font-black text-gray-700 text-center leading-tight">{message}</p>
+      </div>
+    </div>
+  );
+};
+
+const WelcomeScreen = ({ onStart, onShowGuide, onShowRecipes }) => {
+  return (
+    <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-orange-50 animate-fade-in p-6">
+      {/* Background Decors */}
+      <div className="absolute top-[-10%] left-[-10%] w-[50vw] h-[50vw] bg-pink-200 rounded-full blur-[100px] opacity-30"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[60vw] h-[60vw] bg-yellow-200 rounded-full blur-[100px] opacity-30"></div>
+
+      {/* Main Content */}
+      <div className="relative z-10 flex flex-col items-center gap-8 w-full max-w-md h-full">
+        
+        {/* Logo Section */}
+        <div className="flex flex-col items-center animate-pop-in mt-16 z-20">
+          <div className="flex justify-center mb-2">
+            <div className="bg-orange-100 p-3 rounded-full shadow-inner">
+               <PawPrint size={32} className="text-orange-500" />
+            </div>
+          </div>
+          <h1 className="text-5xl font-black text-gray-800 tracking-tighter drop-shadow-sm text-center">
+            PURRFECT<br/>
+            <span className="text-orange-500 text-7xl drop-shadow-md">CHEF</span>
+          </h1>
+          <p className="text-gray-500 font-bold tracking-widest mt-2 text-xs">COOK • COLLECT • CATS</p>
+
+          {/* New Cat Location */}
+          <div className="mt-8 w-180 h-180 flex items-center justify-center animate-pop-in delay-150">
+             <AssetIcon type="cat_mascot_large" className="w-full h-full drop-shadow-2xl" />
+          </div>
+        </div>
+
+        {/* Buttons Section (Moved Down over Mascot) */}
+        <div className="absolute bottom-36 w-full flex flex-col gap-4 z-30">
+          <button 
+            onClick={onStart}
+            className="w-full bg-gradient-to-r from-orange-400 to-pink-500 hover:from-orange-500 hover:to-pink-600 text-white font-black text-2xl py-5 rounded-3xl shadow-xl transform hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3 group"
+          >
+             <div className="bg-white/20 p-2 rounded-full group-hover:bg-white/30"><Play size={24} fill="currentColor" /></div>
+             PLAY GAME
+          </button>
+
+          <div className="flex gap-4">
+            <button onClick={onShowGuide} className="flex-1 bg-white border-2 border-blue-200 hover:border-blue-400 text-blue-600 font-bold py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all">
+              <HelpCircle size={20} /> GUIDE
+            </button>
+            <button onClick={onShowRecipes} className="flex-1 bg-white border-2 border-green-200 hover:border-green-400 text-green-600 font-bold py-4 rounded-2xl shadow-md flex items-center justify-center gap-2 transform active:scale-95 transition-all">
+              <BookOpen size={20} /> RECIPES
+            </button>
+          </div>
+        </div>
+
+        {/* Footer Credits */}
+        <div className="absolute bottom-4 flex flex-col items-center gap-1 z-30 text-gray-500">
+           <span className="text-xs font-bold tracking-widest">VERSION 1.0 SHOWCASE</span>
+           <span className="text-[10px] font-bold">By Varakorn T.</span>
+           <a href="https://www.linkedin.com/in/varakornt/" target="_blank" rel="noreferrer" className="flex items-center gap-1 text-blue-600 hover:text-blue-800 text-[10px] font-bold bg-white/50 px-2 py-1 rounded-full">
+              <Linkedin size={10} fill="currentColor" /> linkedin.com/in/varakornt
+           </a>
+        </div>
+
+      </div>
+      
+    </div>
+  );
+};
+
+const HowToModal = ({ onClose }) => {
+  return (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-[90vw] max-w-lg bg-white/95 backdrop-blur-xl rounded-[2rem] border-4 border-white shadow-2xl p-6 animate-pop-in">
+        <div className="absolute -top-3 -right-3">
+          <button 
+            onClick={onClose}
+            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-md transition-transform hover:scale-110"
+          >
+            <X size={24} strokeWidth={3} />
+          </button>
+        </div>
+        
+        <h3 className="text-2xl font-black text-gray-800 mb-6 text-center tracking-tight">Chef's Guide 🍳</h3>
+        
+        <div className="space-y-6 text-base font-bold text-gray-600">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center text-blue-500 shrink-0 shadow-sm">
+              <MousePointer2 size={24} />
+            </div>
+            <p>Drag or Tap to swap & match 3!</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center text-orange-500 shrink-0 shadow-sm">
+              <ChefHat size={24} />
+            </div>
+            <p>Merge ingredients to cook dishes.</p>
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center text-yellow-600 shrink-0 shadow-sm">
+              <Sparkles size={24} />
+            </div>
+            <p>Tap a Finished Dish to serve it! <br/> <span className="text-green-600">Merge 2+ dishes for HUGE bonus points!</span></p>
+          </div>
+
+          <div className="pt-4 border-t border-gray-200 mt-2">
+            <p className="text-xs text-gray-400 uppercase font-black mb-3 tracking-widest text-center">Special Powerups</p>
+            <div className="grid grid-cols-3 gap-4 text-center text-xs">
+              <div className="flex flex-col items-center gap-1">
+                <AssetIcon type="fire" className="w-10 h-10" />
+                <span>Speed Cook</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <AssetIcon type="water" className="w-10 h-10" />
+                <span>Swap Any</span>
+              </div>
+              <div className="flex flex-col items-center gap-1">
+                <AssetIcon type="electricity" className="w-10 h-10" />
+                <span>Zap Type</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const IngredientsModal = ({ onClose }) => {
+  const ingredients = Object.entries(ITEMS).filter(([key, val]) => val.category === 'ingredient');
+  const others = Object.entries(ITEMS).filter(([key, val]) => val.category !== 'ingredient');
+
+  return (
+    <div className="fixed inset-0 z-[250] flex items-center justify-center bg-black/40 backdrop-blur-sm animate-fade-in">
+      <div className="relative w-[90vw] max-w-lg h-[80vh] flex flex-col bg-white/95 backdrop-blur-xl rounded-[2rem] border-4 border-white shadow-2xl p-6 animate-pop-in">
+        <div className="absolute -top-3 -right-3">
+          <button 
+            onClick={onClose}
+            className="bg-red-500 hover:bg-red-600 text-white rounded-full p-2 shadow-md transition-transform hover:scale-110"
+          >
+            <X size={24} strokeWidth={3} />
+          </button>
+        </div>
+        
+        <h3 className="text-2xl font-black text-gray-800 mb-4 text-center tracking-tight shrink-0">Ingredients Guide 📖</h3>
+        
+        <div className="overflow-y-auto pr-2 space-y-6 flex-1">
+          <div className="space-y-4">
+            {ingredients.map(([key, item]) => (
+              <div key={key} className="bg-gray-50 rounded-xl p-3 shadow-sm border border-gray-100">
+                <h4 className="font-bold text-gray-700 capitalize mb-2">{key}</h4>
+                <div className="flex justify-around items-center">
+                  {item.tiers.map((tier, i) => (
+                    <div key={i} className="flex flex-col items-center gap-1">
+                      <div className="w-12 h-12 drop-shadow-md">
+                        <AssetIcon type={tier.assetId} className="w-full h-full" />
+                      </div>
+                      <span className="text-[10px] text-gray-500 font-bold text-center leading-tight max-w-[60px]">{tier.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="border-t-2 border-gray-200 my-4 relative">
+            <span className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white px-3 text-xs font-bold text-gray-400 uppercase">Extras</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {others.map(([key, item]) => (
+              <div key={key} className="bg-gray-50 rounded-xl p-3 shadow-sm border border-gray-100 flex items-center gap-3">
+                <div className="w-10 h-10 drop-shadow-md shrink-0">
+                  <AssetIcon type={item.assetId} className="w-full h-full" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-gray-700 text-sm">{item.name}</span>
+                  <span className="text-[10px] text-gray-500 leading-tight">
+                    {key === 'coin' ? 'Bonus Points' : key === 'cash' ? 'Score Multiplier' : 'Special Powerup'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const BuffDisplay = ({ activeBuffs }) => {
+  const [expanded, setExpanded] = useState(true);
+  
+  // Re-expand whenever a new buff is added
+  useEffect(() => {
+    if (activeBuffs.length > 0) {
+      setExpanded(true);
+    }
+  }, [activeBuffs.join(',')]);
+
+  if (activeBuffs.length === 0) return null;
+
+  // Force collapse if more than 2 buffs are active to save space
+  const forceShort = activeBuffs.length > 2;
+
+  return (
+    <div className="flex flex-row gap-2 pointer-events-auto items-center justify-center max-w-[50vw] flex-wrap">
+      {activeBuffs.map((buffType) => {
+         const config = ITEMS[buffType];
+         if (!config) return null;
+         
+         const bgColors = {
+             fire: 'bg-rose-100 border-rose-300 text-rose-800',
+             water: 'bg-blue-100 border-blue-300 text-blue-800',
+             electricity: 'bg-yellow-100 border-yellow-300 text-yellow-800',
+             cash: 'bg-emerald-100 border-emerald-300 text-emerald-800'
+         };
+         const colors = bgColors[buffType] || 'bg-gray-100 border-gray-200 text-gray-700';
+
+         return (expanded && !forceShort) ? (
+            <div key={buffType} className={`flex items-center gap-2 ${colors} border-2 px-3 py-1.5 rounded-xl shadow-xl animate-pop-in relative min-w-[150px] z-[110]`}>
+               <div className="w-8 h-8 shrink-0 drop-shadow-md">
+                   <AssetIcon type={config.assetId} className="w-full h-full" />
+               </div>
+               <div className="flex flex-col leading-tight min-w-0 flex-1">
+                   <span className="text-[10px] font-black uppercase tracking-wider truncate">{config.shortName}</span>
+                   <span className="text-[8px] font-bold opacity-90 leading-tight">{config.desc}</span>
+               </div>
+               <button 
+                  onClick={(e) => { e.stopPropagation(); setExpanded(false); }}
+                  className="bg-black/10 hover:bg-black/20 rounded-full p-1 ml-1"
+               >
+                  <X size={10} strokeWidth={3} />
+               </button>
+            </div>
+         ) : (
+            <div 
+              key={buffType} 
+              onClick={() => setExpanded(true)}
+              className={`flex items-center gap-1.5 ${colors} border-2 px-3 py-1.5 rounded-full shadow-lg animate-pop-in cursor-pointer hover:scale-105 transition-transform z-[100]`}
+            >
+               <div className="w-5 h-5 shrink-0">
+                   <AssetIcon type={config.assetId} className="w-full h-full" />
+               </div>
+               <span className="text-[9px] font-black uppercase whitespace-nowrap">{config.shortName}</span>
+            </div>
+         );
+      })}
+    </div>
+  );
+};
+
+const FloatingFX = ({ fx }) => {
+  return (
+    <div 
+      className="absolute pointer-events-none z-[60] flex flex-col items-center animate-float-up transform -translate-x-1/2 -translate-y-1/2 whitespace-nowrap"
+      style={{ left: `${Math.max(15, Math.min(85, fx.x))}%`, top: `${fx.y}%` }}
+    >
+      {fx.icon && <div className="text-5xl filter drop-shadow-lg mb-1">{fx.icon}</div>}
+      {fx.text && (
+        <span className="text-2xl font-black text-white px-4 py-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded-full border-4 border-white shadow-2xl transform -rotate-6">
+          {fx.text}
+        </span>
+      )}
+    </div>
+  );
+};
+
+const Tile = ({ item, isSelected, onPointerDown, row, col, isHint }) => {
+  const [styles, setStyles] = useState({});
+
+  useEffect(() => {
+    if (!item) return;
+    if (item.prevR !== undefined && item.prevR !== row) {
+        const diff = row - item.prevR;
+        if (diff > 0) {
+            setStyles({ transform: `translateY(-${diff * 110}%)`, transition: 'none', zIndex: 10 });
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    setStyles({ transform: 'translateY(0)', transition: 'transform 600ms cubic-bezier(0.34, 1.56, 0.64, 1)', zIndex: 10 });
+                });
+            });
+        }
+    } else {
+        setStyles({});
+    }
+  }, [item, row]); 
+
+  if (!item) return <div className="w-full h-full" />; 
+
+  const config = ITEMS[item.type];
+  if (!config) return null; 
+
+  let assetId;
+  let styleClass = config.styleClass;
+  let tintClass = config.tint || '';
+
+  if (config.category === 'ingredient') {
+    const tierConfig = config.tiers[item.tier];
+    assetId = tierConfig ? tierConfig.assetId : null;
+    
+    if (item.tier === 1) styleClass += " contrast-125"; 
+    if (item.tier === 2) {
+        styleClass = `${BASE_BLOCK_STYLE} bg-gradient-to-b from-amber-300 to-yellow-500 shadow-yellow-800 ring-2 ring-white`;
+        tintClass = "bg-amber-400"; 
+    }
+  } else {
+    assetId = config.assetId;
+  }
+
+  let animationClass = "";
+  if (item.isMerging) animationClass = "animate-merge-pulse z-20 scale-110";
+  else if (item.isMatch) animationClass = "animate-shrink-out";
+  else if (item.isNew && !styles.transform) animationClass = "animate-pop-in"; 
+
+  return (
+    <div 
+      onPointerDown={onPointerDown}
+      className={`
+        relative w-full h-full cursor-pointer touch-none
+        flex items-center justify-center select-none rounded-[1rem]
+        transition-transform duration-100
+        ${styleClass}
+        ${isSelected ? 'scale-90 brightness-110 z-10 ring-4 ring-white shadow-[0_0_20px_rgba(255,255,255,0.8)]' : 'active:scale-95'}
+        ${animationClass}
+        ${isHint ? 'animate-hint-breathe z-30 brightness-110' : ''}
+        ${item.tier === 2 ? 'animate-dish-breathe z-10' : ''}
+      `}
+      style={{ ...styles, animationDuration: styles.transition ? undefined : `${GAME_SPEED}ms` }}
+    >
+      <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/20 to-white/40 pointer-events-none rounded-inherit z-0"></div>
+      
+      <div className="w-[85%] h-[85%] transform transition-transform group-active:scale-95 z-10">
+        <AssetIcon type={assetId} className="w-full h-full" />
+      </div>
+
+      {tintClass && (
+        <div className={`absolute inset-0 ${tintClass} mix-blend-overlay opacity-30 pointer-events-none rounded-inherit z-20`} />
+      )}
+      
+      <div className="absolute top-2 right-2 w-3 h-1.5 bg-white/70 rounded-full blur-[1px] transform -rotate-12 z-30 pointer-events-none"></div>
+      
+      {item.tier === 2 && (
+        <div className="absolute inset-0 flex items-center justify-center z-0">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-40"></span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default function GameBoard() {
+  const [board, setBoard] = useState([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  
+  const [dishesServed, setDishesServed] = useState([]); 
+  const [score, setScore] = useState(0);
+  const [moves, setMoves] = useState(MAX_MOVES);
+  const [gameState, setGameState] = useState('welcome'); 
+  const [showHowTo, setShowHowTo] = useState(false);
+  const [showIngredients, setShowIngredients] = useState(false);
+  const [guideMessage, setGuideMessage] = useState(null);
+
+  const [hint, setHint] = useState(null); 
+  const [activeFX, setActiveFX] = useState([]); 
+  
+  const [logs, setLogs] = useState([]);
+  const [showDebug, setShowDebug] = useState(false);
+  const logCounter = useRef(1);
+  const addLog = (msg, type = 'info') => setLogs(prev => [...prev, { id: logCounter.current++, msg, type }]);
+
+  const [fireBuff, setFireBuff] = useState(false); 
+  const [waterBuff, setWaterBuff] = useState(false); 
+  const [electricityBuff, setElectricityBuff] = useState(false);
+  const [multiplier, setMultiplier] = useState({ val: 1, charges: 0 });
+
+  const [selected, setSelected] = useState(null);
+  const dragStartRef = useRef(null);
+  const hintTimeoutRef = useRef(null);
+  const fxCounter = useRef(0);
+
+  // --- Board Initialization with No Matches ---
+  const createNewItem = (type = null) => {
+    const itemType = type || getWeightedRandomItem();
+    const config = ITEMS[itemType];
+    return {
+      id: Math.random().toString(36).substr(2, 9),
+      type: itemType,
+      category: config.category,
+      tier: 0, 
+      isNew: true,
+      isMatch: false,
+      isMerging: false,
+    };
+  };
+
+  const createInitialBoard = () => {
+    const newBoard = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+      const row = [];
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (LEVEL_LAYOUT[r][c] === 1) {
+          let newItem;
+          let isMatch;
+          let attempts = 0;
+          
+          do {
+              newItem = createNewItem();
+              isMatch = false;
+              if (c >= 2) {
+                  const l1 = row[c-1];
+                  const l2 = row[c-2];
+                  if (l1 && l2 && l1.type === newItem.type && l2.type === newItem.type) isMatch = true;
+              }
+              if (!isMatch && r >= 2) {
+                  const t1 = newBoard[r-1][c];
+                  const t2 = newBoard[r-2][c];
+                  if (t1 && t2 && t1.type === newItem.type && t2.type === newItem.type) isMatch = true;
+              }
+              attempts++;
+          } while (isMatch && attempts < 50);
+          
+          row.push(newItem);
+        } else {
+          row.push(null);
+        }
+      }
+      newBoard.push(row);
+    }
+    return newBoard;
+  };
+
+  // Only init board once on mount
+  useEffect(() => {
+    setBoard(createInitialBoard());
+  }, []);
+
+  // --- Logic Helpers ---
+
+  const triggerFX = (r, c, text, icon = null) => {
+    const id = fxCounter.current++;
+    const y = (r / GRID_SIZE) * 100 + 5; 
+    const x = (c / GRID_SIZE) * 100 + 5;
+    
+    setActiveFX(prev => [...prev, { id, x, y, text, icon }]);
+    setTimeout(() => {
+       setActiveFX(prev => prev.filter(fx => fx.id !== id));
+    }, 1500);
+  };
+
+  const checkForMatches = useCallback((currentBoard) => {
+    let matches = [];
+    const isDish = (item) => item && item.category === 'ingredient' && item.tier === 2;
+    
+    for (let r = 0; r < GRID_SIZE; r++) {
+      let matchBuffer = [];
+      for (let c = 0; c < GRID_SIZE; c++) {
+         const item = currentBoard[r][c];
+         const prev = matchBuffer.length > 0 ? matchBuffer[matchBuffer.length-1].item : null;
+         const isSame = prev && item && prev.type === item.type && (prev.category === 'ingredient' ? prev.tier === item.tier : true);
+         
+         if (isSame) matchBuffer.push({r, c, item});
+         else {
+            if (matchBuffer.length >= 3) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+            else if (matchBuffer.length >= 2 && isDish(matchBuffer[0].item)) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+            matchBuffer = item ? [{r, c, item}] : [];
+         }
+      }
+      if (matchBuffer.length >= 3) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+      else if (matchBuffer.length >= 2 && isDish(matchBuffer[0].item)) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+    }
+    for (let c = 0; c < GRID_SIZE; c++) {
+      let matchBuffer = [];
+      for (let r = 0; r < GRID_SIZE; r++) {
+         const item = currentBoard[r][c];
+         const prev = matchBuffer.length > 0 ? matchBuffer[matchBuffer.length-1].item : null;
+         const isSame = prev && item && prev.type === item.type && (prev.category === 'ingredient' ? prev.tier === item.tier : true);
+         
+         if (isSame) matchBuffer.push({r, c, item});
+         else {
+            if (matchBuffer.length >= 3) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+            else if (matchBuffer.length >= 2 && isDish(matchBuffer[0].item)) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+            matchBuffer = item ? [{r, c, item}] : [];
+         }
+      }
+      if (matchBuffer.length >= 3) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+      else if (matchBuffer.length >= 2 && isDish(matchBuffer[0].item)) matches.push(...matchBuffer.map(b => ({r: b.r, c: b.c})));
+    }
+    
+    return Array.from(new Set(matches.map(m => `${m.r},${m.c}`))).map(s => {
+        const [r, c] = s.split(',').map(Number);
+        return { r, c };
+    });
+  }, []);
+
+  const shuffleBoard = async (currentBoard) => {
+    setIsProcessing(true);
+    addLog("SHUFFLE", "action");
+    
+    let allItems = [];
+    for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+            if (currentBoard[r][c]) {
+                const { prevR, prevC, ...cleanItem } = currentBoard[r][c];
+                allItems.push({ ...cleanItem, isNew: false, isMatch: false, isMerging: false });
+            }
+        }
+    }
+
+    for (let i = allItems.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [allItems[i], allItems[j]] = [allItems[j], allItems[i]];
+    }
+
+    const newBoard = currentBoard.map(row => row.map(() => null));
+    let itemIdx = 0;
+    for (let r = 0; r < GRID_SIZE; r++) {
+        for (let c = 0; c < GRID_SIZE; c++) {
+            if (LEVEL_LAYOUT[r][c] === 1 && itemIdx < allItems.length) {
+                newBoard[r][c] = allItems[itemIdx++];
+                newBoard[r][c].isNew = true;
+            }
+        }
+    }
+
+    setBoard(newBoard);
+    await new Promise(r => setTimeout(r, 600));
+
+    const matches = checkForMatches(newBoard);
+    if (matches.length > 0) await processMatches(matches, null, newBoard);
+    else checkPossibleMoves(newBoard);
+    
+    setIsProcessing(false);
+  };
+
+  const checkPossibleMoves = (currentBoard) => {
+    let possibleMoves = [];
+    const simBoard = currentBoard.map(row => row.map(item => item ? {...item} : null));
+
+    const trySwap = (r, c, dr, dc) => {
+      if (r+dr >= GRID_SIZE || c+dc >= GRID_SIZE) return false;
+      if (LEVEL_LAYOUT[r][c] === 0 || LEVEL_LAYOUT[r+dr][c+dc] === 0) return false;
+      const temp = simBoard[r][c];
+      simBoard[r][c] = simBoard[r+dr][c+dc];
+      simBoard[r+dr][c+dc] = temp;
+      const hasMatch = checkForMatches(simBoard).length > 0;
+      simBoard[r+dr][c+dc] = simBoard[r][c];
+      simBoard[r][c] = temp;
+      return hasMatch;
+    };
+
+    for (let r = 0; r < GRID_SIZE; r++) {
+      for (let c = 0; c < GRID_SIZE; c++) {
+        if (trySwap(r, c, 1, 0)) possibleMoves.push({r, c});
+        if (trySwap(r, c, 0, 1)) possibleMoves.push({r, c});
+      }
+    }
+    
+    if (possibleMoves.length === 0) {
+      triggerFX(3, 3, "No Moves!", "🚫");
+      setTimeout(() => {
+          triggerFX(3, 3, "Shuffle!", "🔀");
+          shuffleBoard(currentBoard);
+      }, 1500);
+    } else {
+      if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+      hintTimeoutRef.current = setTimeout(() => {
+           // Select a RANDOM available move to hint
+           const randomMove = possibleMoves[Math.floor(Math.random() * possibleMoves.length)];
+           setHint(randomMove);
+      }, 3000); 
+    }
+  };
+
+  const executeZap = async (targetItem, boardState) => {
+     if (moves <= 0) return;
+     setIsProcessing(true);
+     setElectricityBuff(false); 
+     setGuideMessage(null);
+     setMoves(prev => prev - 1);
+     triggerFX(3, 3, "Zap!", "⚡");
+
+     const nextBoard = boardState.map(row => row.map(item => {
+         if (!item) return null;
+         if (item.type === targetItem.type && item.tier === targetItem.tier) return null; 
+         return item;
+     }));
+     
+     setBoard(nextBoard);
+     await new Promise(r => setTimeout(r, 400));
+     await applyGravity(nextBoard);
+     setIsProcessing(false);
+  };
+
+  const processMatches = async (matches, triggerCell = null, currentBoardState = null) => {
+    if (matches.length === 0) return false;
+    setIsProcessing(true);
+    setHint(null); 
+    if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+    
+    const sourceBoard = currentBoardState || board;
+    const tempBoard = sourceBoard.map(row => row.map(item => item ? {...item} : null));
+    const target = triggerCell || matches[0];
+    const targetItem = tempBoard[target.r][target.c];
+    
+    if (!targetItem) { setIsProcessing(false); return false; }
+    const config = ITEMS[targetItem.type];
+    const isIngredient = config.category === 'ingredient';
+    
+    if (matches.length >= 5) triggerFX(target.r, target.c, "Superb!", "✨");
+    else if (matches.length >= 4) triggerFX(target.r, target.c, "Cool!", "😎");
+
+    matches.forEach(({r,c}) => {
+       if (tempBoard[r][c]) tempBoard[r][c].isMatch = true;
+    });
+
+    if (isIngredient && targetItem.tier < 2) {
+       tempBoard[target.r][target.c].isMatch = false;
+       tempBoard[target.r][target.c].isMerging = true;
+    }
+
+    setBoard(tempBoard);
+    await new Promise(r => setTimeout(r, GAME_SPEED));
+
+    const nextBoard = tempBoard.map(row => row.map(item => item ? {...item} : null));
+    let earnedScore = 0;
+    const currentMult = multiplier.charges > 0 ? multiplier.val : 1;
+
+    if (targetItem.type === 'cash') {
+       const count = matches.length;
+       const newMult = count >= 5 ? 2.0 : count >= 4 ? 1.5 : 1.2;
+       setMultiplier({ val: newMult, charges: count });
+       earnedScore += 100 * count;
+       triggerFX(target.r, target.c, `${newMult}x Bonus`, "💵");
+    }
+    if (targetItem.type === 'fire') { 
+        setFireBuff(true); 
+        setGuideMessage("Next merge creates a Dish instantly!");
+        triggerFX(target.r, target.c, "Fire!", "🔥"); 
+    }
+    if (targetItem.type === 'water') { 
+        setWaterBuff(true); 
+        setGuideMessage("Tap ANY two blocks to swap them!");
+        triggerFX(target.r, target.c, "Flow!", "💧"); 
+    }
+    if (targetItem.type === 'electricity') { 
+        setElectricityBuff(true); 
+        setGuideMessage("Tap an item to destroy all of its kind!");
+        triggerFX(target.r, target.c, "Charged!", "⚡"); 
+    }
+
+    let itemsToSpawn = 1;
+    if (matches.length === 4) itemsToSpawn = 2;
+    if (matches.length >= 5) itemsToSpawn = 3;
+
+    let spawnLocations = [target];
+    if (itemsToSpawn > 1) {
+        const otherMatches = matches.filter(m => !(m.r === target.r && m.c === target.c));
+        spawnLocations = [...spawnLocations, ...otherMatches.slice(0, itemsToSpawn - 1)];
+    }
+
+    matches.forEach(({r, c}) => {
+       const isSurvivor = spawnLocations.some(loc => loc.r === r && loc.c === c);
+       if (isIngredient && isSurvivor && targetItem.tier < 2) {
+          let upgradeAmount = 1;
+          if (fireBuff) { upgradeAmount = 2; }
+          let newTier = Math.min(2, targetItem.tier + upgradeAmount);
+          nextBoard[r][c] = { ...targetItem, tier: newTier, isMatch: false, isMerging: false, isNew: true, id: Math.random().toString() };
+          earnedScore += 50 * currentMult;
+       } else {
+          nextBoard[r][c] = null;
+          earnedScore += 20 * currentMult;
+       }
+    });
+
+    if (fireBuff && isIngredient) { 
+        setFireBuff(false); 
+        setGuideMessage(null);
+    }
+
+    if (isIngredient && targetItem.tier === 2) {
+       const dish = { ...targetItem, servedId: Date.now() };
+       if (matches.length >= 2) {
+         earnedScore += 500 * currentMult * 1.5 * matches.length; 
+         triggerFX(target.r, target.c, "Combo!", "🍽️");
+       } else {
+         earnedScore += 500 * currentMult;
+         triggerFX(target.r, target.c, "Served!", "🍽️");
+       }
+       
+       setDishesServed(prev => {
+         const existingIdx = prev.findIndex(d => d.type === dish.type);
+         if (existingIdx >= 0) {
+           const newArr = [...prev];
+           newArr[existingIdx] = { ...newArr[existingIdx], count: (newArr[existingIdx].count || 1) + 1 };
+           return newArr;
+         }
+         return [...prev, { ...dish, count: 1 }];
+       });
+       if (multiplier.charges > 0) setMultiplier(prev => ({ ...prev, charges: prev.charges - 1 }));
+    }
+
+    setScore(prev => prev + Math.floor(earnedScore));
+    setBoard(nextBoard); 
+
+    await new Promise(r => setTimeout(r, 150));
+    await applyGravity(nextBoard);
+    setIsProcessing(false);
+    return true;
+  };
+
+  const applyGravity = async (prevBoardState) => {
+    const currentBoard = prevBoardState.map(row => row.map(item => item ? {...item} : null));
+    let moved = false;
+    for (let c = 0; c < GRID_SIZE; c++) {
+      let emptyCount = 0;
+      for (let r = GRID_SIZE - 1; r >= 0; r--) {
+        if (LEVEL_LAYOUT[r][c] === 0) continue; 
+        if (!currentBoard[r][c]) {
+          emptyCount++;
+        } else {
+          if (emptyCount > 0) {
+            currentBoard[r + emptyCount][c] = { ...currentBoard[r][c], isNew: false, prevR: r, prevC: c };
+            currentBoard[r][c] = null;
+            moved = true;
+          } 
+        }
+      }
+    }
+    
+    if (moved) {
+        setBoard(currentBoard); 
+        await new Promise(r => setTimeout(r, 600)); 
+    }
+
+    const cleanBoard = currentBoard.map(row => row.map(item => {
+        if (!item) return null;
+        const { prevR, prevC, ...rest } = item;
+        return rest;
+    }));
+
+    let refilled = false;
+    for (let c = 0; c < GRID_SIZE; c++) {
+      for (let r = 0; r < GRID_SIZE; r++) {
+         if (LEVEL_LAYOUT[r][c] === 1 && !cleanBoard[r][c]) {
+            cleanBoard[r][c] = createNewItem();
+            refilled = true;
+         }
+      }
+    }
+    
+    if (refilled) {
+       const finalBoard = cleanBoard.map(row => row.map(item => item ? {...item} : null));
+       setBoard(finalBoard);
+       const newMatches = checkForMatches(finalBoard);
+       if (newMatches.length > 0) {
+          await new Promise(r => setTimeout(r, GAME_SPEED / 2));
+          await processMatches(newMatches, null, finalBoard); 
+       } else {
+          checkPossibleMoves(finalBoard);
+       }
+    } else if (moved) {
+       setBoard(cleanBoard); 
+       checkPossibleMoves(cleanBoard);
+    }
+  };
+
+  const handlePointerDown = (e, r, c) => {
+     if (isProcessing || gameState !== 'playing') return;
+     if (LEVEL_LAYOUT[r][c] === 0) return;
+     if (hintTimeoutRef.current) clearTimeout(hintTimeoutRef.current);
+     setHint(null);
+
+     if (electricityBuff) {
+         const item = board[r][c];
+         if (item) executeZap(item, board);
+         return; 
+     }
+     
+     dragStartRef.current = { x: e.clientX, y: e.clientY, r, c, isDrag: false };
+     if (!selected) setSelected({ r, c });
+     else if (selected.r === r && selected.c === c) setSelected(null); 
+     else attemptSwap(selected, { r, c });
+  };
+
+  const handlePointerMove = (e) => {
+     if (waterBuff || electricityBuff) return;
+     if (!dragStartRef.current || isProcessing) return;
+     const start = dragStartRef.current;
+     const dx = e.clientX - start.x;
+     const dy = e.clientY - start.y;
+     const threshold = 30;
+     if (Math.abs(dx) > threshold || Math.abs(dy) > threshold) {
+        start.isDrag = true; 
+        let targetR = start.r;
+        let targetC = start.c;
+        if (Math.abs(dx) > Math.abs(dy)) targetC += dx > 0 ? 1 : -1;
+        else targetR += dy > 0 ? 1 : -1;
+        if (targetR >= 0 && targetR < GRID_SIZE && targetC >= 0 && targetC < GRID_SIZE) {
+           attemptSwap({ r: start.r, c: start.c }, { r: targetR, c: targetC });
+           dragStartRef.current = null; 
+        }
+     }
+  };
+
+  const handlePointerUp = () => { 
+     if (dragStartRef.current && !dragStartRef.current.isDrag) {
+         const { r, c } = dragStartRef.current;
+         const item = board[r][c];
+         if (item && item.category === 'ingredient' && item.tier === 2 && !electricityBuff) {
+             processMatches([{r, c}]); 
+             setSelected(null); 
+         }
+     }
+     dragStartRef.current = null; 
+  };
+
+  const attemptSwap = async (pos1, pos2) => {
+    if (LEVEL_LAYOUT[pos2.r][pos2.c] === 0) return;
+    const dist = Math.abs(pos1.r - pos2.r) + Math.abs(pos1.c - pos2.c);
+    const isValidMove = waterBuff ? dist > 0 : dist === 1;
+    if (!isValidMove) { setSelected(pos2); return; }
+
+    const newBoard = board.map(row => [...row]);
+    const t1 = newBoard[pos1.r][pos1.c];
+    const t2 = newBoard[pos2.r][pos2.c];
+    newBoard[pos1.r][pos1.c] = t2;
+    newBoard[pos2.r][pos2.c] = t1;
+    
+    setBoard(newBoard); 
+    setSelected(null);
+    if (waterBuff) { 
+        setWaterBuff(false); 
+        setGuideMessage(null);
+    }
+
+    const matches = checkForMatches(newBoard);
+    if (matches.length > 0) {
+       setMoves(prev => prev - 1);
+       await processMatches(matches, pos2, newBoard);
+    } else {
+       setTimeout(() => setBoard(board), 200); 
+    }
+  };
+
+  // Wait for processing to finish before declaring Game Over
+  useEffect(() => {
+    if (!isProcessing && gameState === 'playing') {
+      if (score >= TARGET_SCORE) setGameState('won');
+      else if (moves <= 0) setGameState('lost');
+    }
+  }, [score, moves, isProcessing, gameState]);
+
+  const handleStartGame = () => {
+    setGameState('playing');
+    setShowHowTo(true);
+  };
+
+  // Aggregate active buffs for display
+  const activeBuffs = [];
+  if (fireBuff) activeBuffs.push('fire');
+  if (waterBuff) activeBuffs.push('water');
+  if (electricityBuff) activeBuffs.push('electricity');
+  if (multiplier.charges > 0) activeBuffs.push('cash');
+
+  return (
+    <div className="min-h-screen bg-orange-50 flex flex-col font-sans select-none overflow-hidden touch-none"
+      onPointerMove={handlePointerMove} onPointerUp={handlePointerUp}>
+      
+      {gameState === 'welcome' && (
+        <WelcomeScreen 
+          onStart={handleStartGame} 
+          onShowGuide={() => setShowHowTo(true)}
+          onShowRecipes={() => setShowIngredients(true)}
+        />
+      )}
+      
+      {showHowTo && <HowToModal onClose={() => setShowHowTo(false)} />}
+      {showIngredients && <IngredientsModal onClose={() => setShowIngredients(false)} />}
+      <DebugConsole logs={logs} visible={showDebug} onToggle={() => setShowDebug(!showDebug)} />
+      
+      {/* Guidance Banner */}
+      <GuideBanner message={guideMessage} />
+
+      {/* Game Over Modal */}
+      {gameState !== 'playing' && gameState !== 'welcome' && (
+        <div className="fixed inset-0 z-[200] bg-black/60 backdrop-blur-md flex items-center justify-center">
+           <div className="bg-white/90 p-8 rounded-[3rem] shadow-2xl flex flex-col items-center animate-pop-in border-8 border-white">
+              <div className="text-8xl mb-4 filter drop-shadow-lg">{gameState === 'won' ? '🎉' : '😓'}</div>
+              <h2 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-purple-600 mb-2">{gameState === 'won' ? 'We did it!' : 'Out of Moves!'}</h2>
+              <p className="text-gray-500 font-bold mb-8 text-xl">Final Score: {score.toLocaleString()}</p>
+              <button onClick={() => window.location.reload()} className="bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 text-white font-bold py-4 px-10 rounded-full shadow-xl transition-transform hover:scale-105 active:scale-95 text-lg">
+                 Play Again
+              </button>
+           </div>
+        </div>
+      )}
+
+      {/* Floating FX Overlay */}
+      {activeFX.map(fx => <FloatingFX key={fx.id} fx={fx} />)}
+
+      {/* Top Bar */}
+      <div className="relative bg-white/40 backdrop-blur-xl p-4 shadow-sm z-50 flex justify-between items-center border-b border-orange-100">
+        <div className="flex items-center gap-3">
+           <div className="flex flex-col items-center leading-none">
+             <div className="text-orange-400 mb-1"><PawPrint size={28} fill="currentColor" /></div>
+             <span className="text-[12px] font-black text-gray-500 uppercase tracking-widest">Purrfect</span>
+             <span className="text-lg font-black text-gray-800">CHEF</span>
+           </div>
+           
+           <div className="flex gap-2">
+             <button onClick={() => setShowHowTo(true)} className="flex flex-col items-center p-2 bg-orange-100 border border-orange-200 rounded-xl shadow-sm hover:bg-white text-orange-600 transform transition-transform hover:scale-105 active:scale-95">
+               <HelpCircle size={20} />
+               <span className="text-[10px] font-bold uppercase mt-0.5">Guide</span>
+             </button>
+             <button onClick={() => setShowIngredients(true)} className="flex flex-col items-center p-2 bg-blue-100 border border-blue-200 rounded-xl shadow-sm hover:bg-white text-blue-600 transform transition-transform hover:scale-105 active:scale-95">
+               <BookOpen size={20} />
+               <span className="text-[10px] font-bold uppercase mt-0.5">Recipes</span>
+             </button>
+           </div>
+
+           <div className="h-10 w-0.5 bg-gray-300 mx-1"></div>
+
+           {/* Moves */}
+           <div className={`flex flex-col items-center bg-pink-500 text-white px-5 py-2 rounded-2xl border-2 shadow-sm ${moves <= 5 ? 'border-red-400 animate-pulse' : 'border-white'}`}>
+              <span className="text-[12px] font-black opacity-80 uppercase tracking-wider">Moves</span>
+              <span className="text-2xl font-black leading-none">{moves}</span>
+           </div>
+        </div>
+
+        {/* Center: Buff Display */}
+        <div className="absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 z-[100]">
+           <BuffDisplay activeBuffs={activeBuffs} />
+        </div>
+
+        {/* Score & Target */}
+        <div className="flex flex-col justify-center items-center bg-yellow-100 px-4 py-1.5 rounded-2xl shadow-md border-2 border-yellow-400 relative overflow-hidden min-w-[100px]">
+          <div className="flex items-center gap-1.5 z-10">
+             <Trophy size={16} className="text-yellow-600 fill-yellow-600" />
+             <span className="font-black text-yellow-800 text-lg leading-none">{score.toLocaleString()}</span>
+          </div>
+          <div className="z-10 text-[9px] font-bold text-yellow-700 uppercase tracking-wide">Goal: {TARGET_SCORE.toLocaleString()}</div>
+          {/* Progress bar background */}
+          <div className="absolute bottom-0 left-0 h-1.5 w-full bg-white/50">
+             <div className="h-full bg-yellow-500 transition-all duration-1000" style={{ width: `${Math.min(100, (score/TARGET_SCORE)*100)}%` }}></div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex-1 flex flex-col items-center justify-center relative">
+        <div className="absolute top-10 left-10 text-6xl opacity-5 animate-pulse">🌸</div>
+        <div className="absolute bottom-20 right-10 text-8xl opacity-5 animate-bounce">🥐</div>
+        <div className="absolute top-20 right-20 text-5xl opacity-5 animate-pulse delay-700">🍋</div>
+        <div className="absolute bottom-40 left-16 text-6xl opacity-5 animate-bounce delay-300">🥬</div>
+        
+        <div className="relative bg-[#fdf6e3] p-4 rounded-[2.5rem] shadow-2xl border-4 border-[#e6d0a8]">
+          <div className="grid gap-1" style={{ gridTemplateColumns: `repeat(${GRID_SIZE}, minmax(0, 1fr))`, width: '96vw', maxWidth: '600px', height: '96vw', maxHeight: '600px' }}>
+            {board.map((row, r) => row.map((item, c) => (
+                 <div key={`${r}-${c}`} className="relative w-full h-full">
+                    {LEVEL_LAYOUT[r][c] === 0 ? <div className="w-full h-full bg-black/5 rounded-[1rem] inner-shadow" /> : 
+                      <Tile item={item} isSelected={selected?.r === r && selected?.c === c} onPointerDown={(e) => handlePointerDown(e, r, c)} row={r} col={c} isHint={hint?.r === r && hint?.c === c} />
+                    }
+                 </div>
+            )))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Tray */}
+      <div className="bg-white/60 backdrop-blur-xl shadow-[0_-10px_30px_rgba(0,0,0,0.05)] p-6 pb-10 z-50 border-t border-white/50 rounded-t-[3rem]">
+         <div className="flex justify-between items-end mb-3 px-2">
+            <h3 className="text-sm font-black text-gray-600 uppercase tracking-widest flex items-center gap-2">
+              <ChefHat size={18} /> Completed Dishes
+            </h3>
+            <span className="text-xs font-bold text-gray-400 bg-white px-2 py-1 rounded-lg">{dishesServed.reduce((acc, curr) => acc + (curr.count || 1), 0)} Served</span>
+         </div>
+         <div className="h-24 bg-white/50 rounded-3xl border-2 border-dashed border-gray-300 flex items-center px-4 gap-3 overflow-x-auto hide-scrollbar">
+            {dishesServed.length === 0 && <div className="flex items-center gap-2 text-gray-400 text-sm font-bold w-full justify-center opacity-60 italic"><Sparkles size={16} /><span>Cook something tasty!</span></div>}
+            {dishesServed.map((dish, i) => {
+               const config = ITEMS[dish.type];
+               if (!config) return null; // Safe check
+               const tiers = config.tiers;
+               const assetId = tiers ? tiers[2].assetId : null; 
+               return (
+                 <div key={i} className="flex-shrink-0 w-16 h-16 bg-white rounded-2xl shadow-[0_4px_10px_rgba(0,0,0,0.1)] border border-white flex items-center justify-center animate-pop-in relative overflow-visible transform hover:scale-110 transition-transform">
+                    <div className="w-[80%] h-[80%] drop-shadow-md">
+                        <AssetIcon type={assetId} className="w-full h-full" />
+                    </div>
+                    {dish.count > 1 && (
+                      <div className="absolute -top-2 -right-2 bg-gradient-to-br from-red-400 to-pink-500 text-white text-xs font-black w-6 h-6 rounded-full flex items-center justify-center shadow-lg border-2 border-white z-20">
+                        {dish.count}
+                      </div>
+                    )}
+                 </div>
+               )
+            })}
+         </div>
+      </div>
+
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        @keyframes pop-in { 0% { transform: scale(0); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+        .animate-pop-in { animation: pop-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        @keyframes shrink-out { 0% { transform: scale(1); opacity: 1; } 100% { transform: scale(0); opacity: 0; } }
+        .animate-shrink-out { animation: shrink-out 0.5s ease-in forwards; }
+        @keyframes merge-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.2); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
+        .animate-merge-pulse { animation: merge-pulse 0.5s ease-in-out; }
+        @keyframes hint-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+        .animate-hint-breathe { animation: hint-breathe 2s ease-in-out infinite; }
+        @keyframes dish-breathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .animate-dish-breathe { animation: dish-breathe 3s ease-in-out infinite; }
+        @keyframes float-up { 0% { transform: translateY(0) scale(0.5); opacity: 0; } 20% { transform: translateY(-20px) scale(1.1); opacity: 1; } 100% { transform: translateY(-100px) scale(1); opacity: 0; } }
+        .animate-float-up { animation: float-up 2s ease-out forwards; }
+        @keyframes buff-pop { 0% { transform: scale(0); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+        .animate-buff-pop { animation: buff-pop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .animate-fade-in { animation: fade-in 0.3s ease-out forwards; }
+        @keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+      `}</style>
+    </div>
+  );
+}
